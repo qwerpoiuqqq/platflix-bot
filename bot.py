@@ -99,4 +99,7 @@ async def main():
     await app.run_polling()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    from telegram.ext import ApplicationBuilder
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    # 이미 필요한 핸들러들은 app에 등록되었다고 가정하고
+    app.run_polling(close_loop=False)
