@@ -37,11 +37,9 @@ def get_sheet():
 
 # ===== 연장 처리 예시 (시트 -> user_data.json 갱신 등) =====
 def process_extension(sheet):
-    # 실제 연장 처리 로직은 추후 구현할 수 있도록 아래 placeholder입니다.
-    # 예시: 시트에서 '연장 개월수'와 '입금 여부'가 조건에 맞는 사용자 행을 찾아 만료일을 업데이트하고,
-    # 해당 행을 삭제하는 로직을 구현.
+    # 여기서 시트 데이터를 순회하며 연장 조건에 맞는 사용자 처리 로직 구현
     updated_users = []
-    # TODO: 구현 예정
+    # 현재는 테스트용으로 빈 리스트 반환 (추후 실제 로직 추가)
     return updated_users
 
 # ===== 텔레그램 핸들러 함수들 =====
@@ -55,7 +53,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text)
 
 async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # 예시: user_data.json -> 엑셀 변환 (실제 기능은 utils/json_to_excel.py로 구현)
+    # 예시: user_data.json -> 엑셀 변환 (실제 기능은 utils/json_to_excel.py로 구현 예정)
     await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
 
 async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,5 +92,6 @@ async def main():
     await app.run_polling(close_loop=False)
 
 if __name__ == '__main__':
-    import asyncio
+    import nest_asyncio
+    nest_asyncio.apply()
     asyncio.run(main())
