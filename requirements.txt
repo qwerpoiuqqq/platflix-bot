@@ -2,3 +2,4 @@ python-telegram-bot==20.0
 openpyxl
 gspread
 oauth2client
+nest_asyncio
