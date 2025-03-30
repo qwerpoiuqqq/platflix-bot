@@ -2,44 +2,63 @@ import logging
 import json
 import asyncio
 from datetime import datetime, timedelta
+
+# telegram 패키지
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
+
+# gspread, oauth 인증
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-
-# 환경변수 (Render에서 설정)
 import os
+
+# ===== 환경 변수 =====
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 ADMIN_CHAT_ID = os.environ['ADMIN_CHAT_ID']
 SPREADSHEET_ID = os.environ['SPREADSHEET_ID']
+# JSON 키파일 내용 (멀티라인)
+GOOGLE_JSON_KEY = os.environ['GOOGLE_JSON_KEY']
 
-# 구글 인증
+# ===== 구글 시트 함수 =====
 def get_sheet():
+    # JSON 키를 임시 파일에 저장 후 사용 (또는 from_json_keyfile_dict 사용 가능)
+    with open("service_account.json", "w", encoding="utf-8") as f:
+        f.write(GOOGLE_JSON_KEY)
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name('vaulted-journal-455310-n4-b59f57f4ed55.json', scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SPREADSHEET_ID).sheet1
     return sheet
 
-# 사용자 연장 처리
+# ===== 연장 처리 예시 (시트 -> user_data.json 갱신 등) =====
 def process_extension(sheet):
-    rows = sheet.get_all_records()
-    updated_users = []
-    for i, row in enumerate(rows, start=2):  # 시트의 실제 행 번호
-        if str(row['입금 여부']).lower() == 'o' and row['연장 개월수']:
-            months = int(row['연장 개월수'].replace('개월', '').strip())
-            try:
-                expires = datetime.strptime(row['만료일'], '%Y-%m-%d').date()
-            except:
-                continue
-            new_expiry = expires + timedelta(days=30 * months)
-            row['만료일'] = new_expiry.strftime('%Y-%m-%d')
-            sheet.update_cell(i, 3, row['만료일'])  # 만료일 업데이트
-            sheet.delete_rows(i)  # 연장 처리 후 시트에서 삭제
-            updated_users.append(f"{row['이름']} ({row['이메일']}) → +{months}개월")
-    return updated_users
+    # 시트에서 '연장 개월수', '입금 여부'가 o 인 사용자 찾아서 연장 처리하는 로직 등
+    # ...
+    return []  # 예: 연장된 유저 목록
 
-# 자동 체크 루프
+# ===== 텔레그램 핸들러 함수들 =====
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🛠 사용 가능한 명령어(일반 메시지 방식):\n"
+        ".도움말 - 도움말 보기\n"
+        ".파일다운로드 - user_data를 엑셀로 다운로드\n"
+        ".만료3 - 3일 후 만료 대상자 목록"
+    )
+    await update.message.reply_text(text)
+
+async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # 예시: user_data.json -> 엑셀 변환
+    await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
+
+async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("만료 3일 대상자 목록 안내 (샘플)")
+
+# ===== 매일 자동 체크 (예: 오전 8시) =====
 async def daily_check(app):
     while True:
         now = datetime.now()
@@ -53,39 +72,30 @@ async def daily_check(app):
         else:
             await asyncio.sleep(60)
 
-# /도움말 명령어
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    help_text = (
-        "🛠 사용 가능한 명령어:\n"
-        "/도움말 - 이 도움말 보기\n"
-        "/파일다운로드 - 전체 사용자 엑셀 파일 받기\n"
-        "/만료3 - 3일 후 만료 대상자 보기\n"
-    )
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=help_text)
-
-# /파일다운로드 명령어
-async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from utils.json_to_excel import convert_json_to_excel
-    path = convert_json_to_excel()
-    await context.bot.send_document(chat_id=update.effective_chat.id, document=open(path, 'rb'))
-
-# /만료3 명령어
-async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    today = datetime.now().date()
-    target = today + timedelta(days=3)
-    with open("user_data.json", "r", encoding="utf-8") as f:
-        users = json.load(f)
-    filtered = [f"- {u['이름']} ({u['이메일']})" for u in users if '만료일' in u and u['만료일'] == target.strftime('%Y-%m-%d')]
-    msg = "📆 3일 후 만료 예정:\n" + "\n".join(filtered) if filtered else "🙅‍♀️ 3일 후 만료자는 없습니다."
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=msg)
-
-# main 함수
+# ===== main() =====
 async def main():
+    # 봇 인스턴스 생성
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("도움말", help_command))
-    app.add_handler(CommandHandler("파일다운로드", download_command))
-    app.add_handler(CommandHandler("만료3", expired_command))
+
+    # 1) ".도움말" 명령어
+    app.add_handler(
+        MessageHandler(filters.Regex(r'^\.도움말$'), help_command)
+    )
+
+    # 2) ".파일다운로드" 명령어
+    app.add_handler(
+        MessageHandler(filters.Regex(r'^\.파일다운로드$'), download_command)
+    )
+
+    # 3) ".만료3" 명령어
+    app.add_handler(
+        MessageHandler(filters.Regex(r'^\.만료3$'), expired_command)
+    )
+
+    # 매일 자동 체크 작업 병렬 수행
     asyncio.create_task(daily_check(app))
+
+    # 봇 실행
     await app.run_polling()
 
 if __name__ == '__main__':
