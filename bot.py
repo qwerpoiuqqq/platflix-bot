@@ -9,32 +9,17 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import os
+from utils.sheet_helper import get_sheet_df
 
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 ADMIN_CHAT_ID = os.environ['ADMIN_CHAT_ID']
 SPREADSHEET_ID = os.environ['SPREADSHEET_ID']
 GOOGLE_JSON_KEY = os.environ['GOOGLE_JSON_KEY']
 
-def get_sheet():
-    with open("service_account.json", "w", encoding="utf-8") as f:
-        f.write(GOOGLE_JSON_KEY)
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-    client = gspread.authorize(creds)
-    return client.open_by_key(SPREADSHEET_ID).sheet1
-
-def process_extension(sheet):
-    return []
-
 def load_users():
-    try:
-        with open("user_data.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    except:
-        return None
+    df = get_sheet_df("user_data")
+    return df.to_dict(orient="records")
 
 def format_user_entry(user):
     name = user.get("이름", "이름없음")
@@ -54,9 +39,6 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ".무료 사용자 - 무료 사용자 목록"
     )
 
-async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
-
 async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         n = int(context.matches[0].group(1))
@@ -66,10 +48,6 @@ async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     today = datetime.now().date()
     users = load_users()
-    if not users:
-        await update.message.reply_text("데이터 로드 실패")
-        return
-
     groups = {}
 
     for user in users:
@@ -100,11 +78,8 @@ async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def today_expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today = datetime.now().date()
     users = load_users()
-    if not users:
-        await update.message.reply_text("데이터 로드 실패")
-        return
-
     entries = []
+
     for user in users:
         try:
             if datetime.strptime(user.get("만료일", ""), "%Y-%m-%d").date() == today:
@@ -120,11 +95,8 @@ async def today_expired_command(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = load_users()
-    if not users:
-        await update.message.reply_text("데이터 로드 실패")
-        return
-
     entries = []
+
     for user in users:
         if (user.get("지인 여부", "").strip().upper() == "O" and
             user.get("결제 여부", "").strip().upper() == "X" and
@@ -137,15 +109,16 @@ async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await update.message.reply_text("무료 사용자가 없습니다.")
 
+async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
+
 async def daily_check(app):
     while True:
         now = datetime.now()
         if now.hour == 8 and now.minute < 5:
             try:
-                sheet = get_sheet()
-                updated = process_extension(sheet)
-                if updated:
-                    await app.bot.send_message(chat_id=ADMIN_CHAT_ID, text="✅ 연장 완료:\n" + "\n".join(updated))
+                # TODO: 여기에서 3일 전 사용자 필터링 + 이메일/텔레그램 안내
+                pass
             except Exception as e:
                 logging.error(f"[DailyCheckError] {e}")
             await asyncio.sleep(3600)
@@ -156,11 +129,11 @@ async def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     await app.bot.delete_webhook(drop_pending_updates=True)
 
-    app.add_handler(MessageHandler(filters.Regex(r'^\.도움말$'), help_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\.파일다운로드$'), download_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\.만료\s*(-?\d+)$'), expired_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\.오늘만료$'), today_expired_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\.무료\s*사용자$'), free_users_command))
+    app.add_handler(MessageHandler(filters.Regex(r'^\\.도움말$'), help_command))
+    app.add_handler(MessageHandler(filters.Regex(r'^\\.파일다운로드$'), download_command))
+    app.add_handler(MessageHandler(filters.Regex(r'^\\.만료\\s*(-?\\d+)$'), expired_command))
+    app.add_handler(MessageHandler(filters.Regex(r'^\\.오늘만료$'), today_expired_command))
+    app.add_handler(MessageHandler(filters.Regex(r'^\\.무료\\s*사용자$'), free_users_command))
 
     asyncio.create_task(daily_check(app))
     await app.run_polling(close_loop=False)
