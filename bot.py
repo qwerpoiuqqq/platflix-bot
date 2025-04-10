@@ -1,13 +1,15 @@
 import logging
 import asyncio
-import nest_asyncio
+from datetime import datetime, timedelta  # 여기 추가
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 import os
 from utils.sheet_helper import get_sheet_df, append_row
-
-# 이걸 통해 이벤트 루프 중복 방지
-nest_asyncio.apply()
 
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 ADMIN_CHAT_ID = os.environ['ADMIN_CHAT_ID']
@@ -26,6 +28,7 @@ def format_user_entry(user):
     admin = group.split('@')[0] if "@" in group else group
     return f"👤 {name}\n📧 {email}\n👑 {admin}('{group_num}')"
 
+# 도움말 명령어
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🛠 사용 가능한 명령어:\n"
@@ -36,6 +39,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ".무료 사용자 - 무료 사용자 목록"
     )
 
+# 만료 명령어
 async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         n = int(context.matches[0].group(1))
@@ -72,6 +76,7 @@ async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("해당 조건의 만료 대상자가 없습니다.")
 
+# 오늘 만료 명령어
 async def today_expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     today = datetime.now().date()
     users = load_users()
@@ -90,6 +95,7 @@ async def today_expired_command(update: Update, context: ContextTypes.DEFAULT_TY
     else:
         await update.message.reply_text("오늘 만료되는 사용자가 없습니다.")
 
+# 무료 사용자 명령어
 async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = load_users()
     entries = []
@@ -106,6 +112,7 @@ async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await update.message.reply_text("무료 사용자가 없습니다.")
 
+# 파일 다운로드 명령어
 async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
 
@@ -143,6 +150,7 @@ def check_payment_and_extend():
             # 입금 미확인 시 삭제 또는 최종 안내
             pass
 
+# 매일 체크
 async def daily_check(app):
     while True:
         now = datetime.now()
@@ -156,6 +164,7 @@ async def daily_check(app):
         else:
             await asyncio.sleep(60)
 
+# 메인 실행 함수
 async def main():
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
     await app.bot.delete_webhook(drop_pending_updates=True)
