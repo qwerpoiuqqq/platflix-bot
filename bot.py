@@ -1,16 +1,13 @@
 import logging
-import json
 import asyncio
-from datetime import datetime, timedelta
+import nest_asyncio
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 import os
 from utils.sheet_helper import get_sheet_df, append_row
+
+# 이걸 통해 이벤트 루프 중복 방지
+nest_asyncio.apply()
 
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 ADMIN_CHAT_ID = os.environ['ADMIN_CHAT_ID']
