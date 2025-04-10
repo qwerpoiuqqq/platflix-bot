@@ -1,6 +1,6 @@
 import logging
 import asyncio
-from datetime import datetime, timedelta  # 여기 추가
+from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -11,15 +11,21 @@ from telegram.ext import (
 import os
 from utils.sheet_helper import get_sheet_df, append_row
 
+# 디버그 로그 설정
+logging.basicConfig(level=logging.INFO)
+
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 ADMIN_CHAT_ID = os.environ['ADMIN_CHAT_ID']
 SPREADSHEET_ID = os.environ['SPREADSHEET_ID']
 GOOGLE_JSON_KEY = os.environ['GOOGLE_JSON_KEY']
 
+# 유저 데이터 로딩 함수
 def load_users():
+    logging.info("Loading users data from Google Sheets...")
     df = get_sheet_df("user_data")
     return df.to_dict(orient="records")
 
+# 사용자 정보를 형식에 맞게 포맷팅하는 함수
 def format_user_entry(user):
     name = user.get("이름", "이름없음")
     email = user.get("이메일", "이메일없음")
@@ -28,8 +34,9 @@ def format_user_entry(user):
     admin = group.split('@')[0] if "@" in group else group
     return f"👤 {name}\n📧 {email}\n👑 {admin}('{group_num}')"
 
-# 도움말 명령어
+# 도움말 명령어 처리
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Help command triggered")
     await update.message.reply_text(
         "🛠 사용 가능한 명령어:\n"
         ".도움말 - 도움말 보기\n"
@@ -39,8 +46,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ".무료 사용자 - 무료 사용자 목록"
     )
 
-# 만료 명령어
+# 만료 명령어 처리
 async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Expired command triggered")
     try:
         n = int(context.matches[0].group(1))
     except:
@@ -76,8 +84,9 @@ async def expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("해당 조건의 만료 대상자가 없습니다.")
 
-# 오늘 만료 명령어
+# 오늘 만료 명령어 처리
 async def today_expired_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Today expired command triggered")
     today = datetime.now().date()
     users = load_users()
     entries = []
@@ -95,8 +104,9 @@ async def today_expired_command(update: Update, context: ContextTypes.DEFAULT_TY
     else:
         await update.message.reply_text("오늘 만료되는 사용자가 없습니다.")
 
-# 무료 사용자 명령어
+# 무료 사용자 명령어 처리
 async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Free users command triggered")
     users = load_users()
     entries = []
 
@@ -112,12 +122,14 @@ async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         await update.message.reply_text("무료 사용자가 없습니다.")
 
-# 파일 다운로드 명령어
+# 파일 다운로드 명령어 처리
 async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info("Download command triggered")
     await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
 
 # 연장자 시트에 기록
 def add_extension_to_sheet(user):
+    logging.info(f"Adding extension for user: {user.get('이름')}")
     row_data = [
         user.get("이름"),
         user.get("이메일"),
@@ -133,6 +145,7 @@ def add_extension_to_sheet(user):
 
 # 연장된 사용자 처리
 def process_extension():
+    logging.info("Processing extensions...")
     users = get_sheet_df("user_data")
     for user in users:
         exp_date = datetime.strptime(user.get("만료일", ""), "%Y-%m-%d").date()
@@ -141,6 +154,7 @@ def process_extension():
 
 # 입금 여부 확인 후 연장/삭제
 def check_payment_and_extend():
+    logging.info("Checking payments and processing extensions...")
     extends_data = get_sheet_df("extends_data")
     for user in extends_data:
         if user.get("입금 여부") == "o":
@@ -166,8 +180,10 @@ async def daily_check(app):
 
 # 메인 실행 함수
 async def main():
+    logging.info("Starting bot...")
     app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-    await app.bot.delete_webhook(drop_pending_updates=True)
+
+    logging.info("App built successfully")
 
     app.add_handler(MessageHandler(filters.Regex(r'^\\.도움말$'), help_command))
     app.add_handler(MessageHandler(filters.Regex(r'^\\.파일다운로드$'), download_command))
@@ -175,8 +191,13 @@ async def main():
     app.add_handler(MessageHandler(filters.Regex(r'^\\.오늘만료$'), today_expired_command))
     app.add_handler(MessageHandler(filters.Regex(r'^\\.무료\\s*사용자$'), free_users_command))
 
+    logging.info("Handlers added successfully")
+
     asyncio.create_task(daily_check(app))
+
+    logging.info("Starting polling...")
     await app.run_polling(close_loop=False)
+    logging.info("Bot is running...")
 
 if __name__ == "__main__":
     import nest_asyncio
