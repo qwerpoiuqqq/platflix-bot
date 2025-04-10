@@ -185,19 +185,18 @@ async def main():
 
     logging.info("App built successfully")
 
-    app.add_handler(MessageHandler(filters.Regex(r'^\\.도움말$'), help_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\\.파일다운로드$'), download_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\\.만료\\s*(-?\\d+)$'), expired_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\\.오늘만료$'), today_expired_command))
-    app.add_handler(MessageHandler(filters.Regex(r'^\\.무료\\s*사용자$'), free_users_command))
+    # 명령어를 텍스트로만 비교 (정규식 변경)
+    app.add_handler(MessageHandler(filters.TEXT & filters.regex(r'^\.(도움말|파일다운로드|만료|오늘만료|무료 사용자)$'), help_command))
+    app.add_handler(MessageHandler(filters.TEXT & filters.regex(r'^\.(만료|오늘만료|무료 사용자)$'), expired_command))
 
     logging.info("Handlers added successfully")
 
-    asyncio.create_task(daily_check(app))
-
-    logging.info("Starting polling...")
-    await app.run_polling(close_loop=False)
-    logging.info("Bot is running...")
+    try:
+        logging.info("Starting polling...")
+        await app.run_polling(close_loop=False)
+        logging.info("Bot is running...")
+    except Exception as e:
+        logging.error(f"Error during polling: {e}")
 
 if __name__ == "__main__":
     import nest_asyncio
