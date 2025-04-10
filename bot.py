@@ -186,8 +186,8 @@ async def main():
     logging.info("App built successfully")
 
     # 명령어를 텍스트로만 비교 (정규식 변경)
-    app.add_handler(MessageHandler(filters.TEXT & filters.regex(r'^\.(도움말|파일다운로드|만료|오늘만료|무료 사용자)$'), help_command))
-    app.add_handler(MessageHandler(filters.TEXT & filters.regex(r'^\.(만료|오늘만료|무료 사용자)$'), expired_command))
+    app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\.(도움말|파일다운로드|만료|오늘만료|무료 사용자)$'), help_command))
+    app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^\.(만료|오늘만료|무료 사용자)$'), expired_command))
 
     logging.info("Handlers added successfully")
 
