@@ -10,7 +10,7 @@ from telegram.ext import (
     filters
 )
 import os
-from utils.sheet_helper import get_sheet_df
+from utils.sheet_helper import get_sheet_df, append_row
 
 TELEGRAM_TOKEN = os.environ['TELEGRAM_TOKEN']
 ADMIN_CHAT_ID = os.environ['ADMIN_CHAT_ID']
@@ -112,13 +112,47 @@ async def free_users_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def download_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("파일 다운로드 기능 동작 (샘플)")
 
+# 연장자 시트에 기록
+def add_extension_to_sheet(user):
+    row_data = [
+        user.get("이름"),
+        user.get("이메일"),
+        user.get("만료일"),
+        user.get("전화번호"),
+        user.get("비고"),
+        user.get("그룹"),
+        user.get("그룹 번호"),
+        "입금 여부",  # 입금 여부 필드, 실제 확인 후 입력
+        "연장 개월수",  # 연장 개월수 (예: 1개월, 3개월)
+    ]
+    append_row("extends_data", row_data)
+
+# 연장된 사용자 처리
+def process_extension():
+    users = get_sheet_df("user_data")
+    for user in users:
+        exp_date = datetime.strptime(user.get("만료일", ""), "%Y-%m-%d").date()
+        if exp_date == datetime.now().date() + timedelta(days=3):  # 3일 전 사용자
+            add_extension_to_sheet(user)
+
+# 입금 여부 확인 후 연장/삭제
+def check_payment_and_extend():
+    extends_data = get_sheet_df("extends_data")
+    for user in extends_data:
+        if user.get("입금 여부") == "o":
+            # 연장 처리 (30일 + 연장 개월수 적용)
+            pass
+        else:
+            # 입금 미확인 시 삭제 또는 최종 안내
+            pass
+
 async def daily_check(app):
     while True:
         now = datetime.now()
         if now.hour == 8 and now.minute < 5:
             try:
-                # TODO: 여기에서 3일 전 사용자 필터링 + 이메일/텔레그램 안내
-                pass
+                process_extension()  # 연장 처리
+                check_payment_and_extend()  # 입금 확인 후 연장
             except Exception as e:
                 logging.error(f"[DailyCheckError] {e}")
             await asyncio.sleep(3600)
