@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 test_sheet.py
+python3 bot.py
