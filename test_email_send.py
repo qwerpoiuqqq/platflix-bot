@@ -7,12 +7,12 @@ def get_due_date_str():
     return f"{d.month}월 {d.day}일 (23시 59분까지)"
 
 user_info = {
-    "이름": "테스트유저",
-    "이메일": "받을이메일@gmail.com",
+    "이름": "김아무개",
+    "이메일": "video.tjdgus@gmail.com",
     "가입이메일": "google_account@gmail.com",
-    "만료일": "2025-04-11",
-    "입금계좌": "000-1234-5678",
-    "카카오채널링크": "https://pf.kakao.com/_XXXXXX"
+    "만료일": "2025-04-13",
+    "입금계좌": "신한은행 110-502-426504",
+    "카카오채널링크": "http://pf.kakao.com/_aXeYK"
 }
 
 # 일반 사용자 메일 테스트

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>유튜브 프리미엄 만료 안내</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f5;
+    }
+
+    .email-container {
+      width: 100%;
+      padding: 32px 16px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 600px;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    }
+
+    .header {
+      background-color: #111827;
+      padding: 24px;
+    }
+
+    .header h2 {
+      color: #ffffff;
+      font-size: 18px;
+      margin: 0;
+      text-align: left;
+    }
+
+    .content {
+      padding: 24px;
+      color: #111827;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .info-box {
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .info-box table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .info-box td {
+      padding: 10px;
+    }
+
+    .info-box tr {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .info-box .price-table td {
+      padding: 6px 0;
+    }
+
+    .button-container {
+      text-align: center;
+      margin: 24px 0 16px;
+    }
+
+    .button {
+      display: inline-block;
+      background-color: #3b82f6;
+      color: #ffffff;
+      font-size: 15px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+
+    .footer {
+      background-color: #f3f4f6;
+      padding: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="card">
+      <!-- 제목 -->
+      <div class="header">
+        <h2>{{이름}}님, 유튜브 프리미엄 이용이 곧 만료됩니다!</h2>
+      </div>
+
+      <!-- 본문 -->
+      <div class="content">
+        <p><strong>{{이름}}</strong>님 안녕하세요,<br />
+        유튜브 프리미엄 전문 <strong>플랫플릭스</strong>입니다.</p>
+
+        <p>
+          고객님의 프리미엄 서비스가 <strong>3일 뒤</strong> 만료됩니다.<br />
+          아래 금액을 확인하신 뒤 <strong>입금을 진행해 주세요.</strong>
+        </p>
+
+        <!-- 구독 연장 정보 박스 -->
+        <div class="info-box">
+          <p style="font-weight: bold; font-size: 15px; margin-bottom: 16px; color: #111827;">📄 구독 연장 정보</p>
+
+          <table>
+            <tr>
+              <td style="color: #6b7280; width: 35%;">가입 이메일</td>
+              <td style="color: #111827;">{{가입이메일}}</td>
+            </tr>
+            <tr>
+              <td style="color: #6b7280;">만료일</td>
+              <td style="color: #111827;">{{만료일}}</td>
+            </tr>
+            <tr>
+              <td style="color: #6b7280;">납부 기한</td>
+              <td style="color: #111827;">{{납부기한}}</td>
+            </tr>
+            <tr>
+              <td style="color: #6b7280;">입금 계좌</td>
+              <td style="color: #111827;">{{입금계좌}}</td>
+            </tr>
+            <tr>
+              <td style="color: #6b7280; vertical-align: top;">연장 금액</td>
+              <td>
+                <table class="price-table" style="width: 100%;">
+                  <tr>
+                    <td>1개월</td>
+                    <td style="text-align: right; font-weight: 600;">5,000원</td>
+                  </tr>
+                  <tr>
+                    <td>3개월</td>
+                    <td style="text-align: right; font-weight: 600;">13,500원</td>
+                  </tr>
+                  <tr>
+                    <td>6개월</td>
+                    <td style="text-align: right; font-weight: 600;">25,000원</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- 안내 문구 -->
+        <p style="font-size: 14px; color: #4b5563;">
+          📌 이메일 수신자 이름과 입금자 이름이 <strong>일치하는 경우</strong>, 해당 금액을 입금하시면 자동 연장 처리됩니다.<br /><br />
+          💬 입금자명과 계정 이름이 <strong>다를 경우</strong>, 입금 후 <strong>가입 이메일 및 입금자명</strong>을 꼭 전달해주세요.
+        </p>
+
+        <!-- 버튼 -->
+        <div class="button-container">
+          <a href="{{카카오채널링크}}" class="button">카카오채널 문의하기</a>
+        </div>
+
+        <!-- 하단 안내 -->
+        <p style="font-size:13px; color:#6b7280; text-align: center;">
+          문의사항이 있으시면 <strong>위의 버튼</strong>을 눌러 연락 주세요 :)
+        </p>
+      </div>
+
+      <!-- 푸터 -->
+      <div class="footer">
+        본 메일은 발신 전용입니다. ⓒ 플랫플릭스 All rights reserved.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
