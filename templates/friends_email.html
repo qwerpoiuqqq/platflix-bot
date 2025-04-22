@@ -9,6 +9,7 @@
       margin: 0;
       padding: 0;
       background-color: #f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
     }
 
     .email-container {
@@ -26,7 +27,6 @@
       border-radius: 12px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
     }
 
     .header {
@@ -36,16 +36,17 @@
 
     .header h2 {
       color: #ffffff;
-      font-size: 18px;
+      font-size: 4vw; /* 동적 크기 조정 */
       margin: 0;
       text-align: left;
+      word-wrap: break-word;
     }
 
     .content {
       padding: 24px;
       color: #111827;
       text-align: left;
-      font-size: 15px;
+      font-size: 2.5vw; /* 모바일 대응을 위한 크기 */
       line-height: 1.6;
     }
 
@@ -60,15 +61,46 @@
     .info-box table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
       font-size: 14px;
     }
 
     .info-box td {
-      padding: 10px;
+      padding: 12px 10px;
+      vertical-align: top;
+      word-wrap: break-word;
     }
 
-    .info-box tr {
-      border-bottom: 1px solid #e5e7eb;
+    .info-box .label {
+      width: 35%;
+      color: #6b7280;
+      font-weight: 500;
+      white-space: nowrap;
+      word-break: keep-all;
+    }
+
+    .info-box .value {
+      width: 65%;
+      color: #111827;
+    }
+
+    .price-table td {
+      padding: 6px 0;
+    }
+
+    .button-container {
+      text-align: center;
+      margin: 24px 0 16px;
+    }
+
+    .button {
+      display: inline-block;
+      background-color: #3b82f6;
+      color: #ffffff;
+      font-size: 2.5vw;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
     }
 
     .footer {
@@ -77,6 +109,20 @@
       text-align: center;
       font-size: 12px;
       color: #9ca3af;
+    }
+
+    /* 반응형 디자인 */
+    @media (max-width: 600px) {
+      .header h2 {
+        font-size: 5vw;
+      }
+      .content {
+        font-size: 4vw;
+      }
+      .button {
+        font-size: 4vw;
+        padding: 10px 20px;
+      }
     }
   </style>
 </head>
@@ -102,17 +148,17 @@
         <div class="info-box">
           <p style="font-weight: bold; font-size: 15px; margin-bottom: 16px; color: #111827;">📄 납부 정보</p>
           <table>
-            <tr>
-              <td style="color: #6b7280; width: 35%;">가입 이메일</td>
-              <td style="color: #111827;">{{가입이메일}}</td>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td class="label">가입 이메일</td>
+              <td class="value">{{가입이메일}}</td>
             </tr>
-            <tr>
-              <td style="color: #6b7280;">입금 계좌</td>
-              <td style="color: #111827;">{{입금계좌}}</td>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td class="label">입금 계좌</td>
+              <td class="value">신한은행 110-502-426504</td> <!-- 계좌 번호 추가 -->
             </tr>
-            <tr>
-              <td style="color: #6b7280;">납부 기한</td>
-              <td style="color: #111827;">{{납부기한}}</td>
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td class="label">납부 기한</td>
+              <td class="value">{{납부기한}}</td>
             </tr>
           </table>
         </div>

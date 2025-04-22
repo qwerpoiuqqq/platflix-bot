@@ -27,14 +27,13 @@ def daily_check():
         send_telegram_message(f"❗ [daily_check] 오류 발생: {e}")
         logging.error(f"[daily_check] 예외: {e}")
 
-# 테스트용: 스케줄을 “20:45”로 설정하거나, 원래대로 “08:00”로 복원하세요.
-schedule.every().day.at("20:45").do(daily_check)
-# schedule.every().day.at("08:00").do(daily_check)
+# 매일 아침 08:00에 실행되도록 설정
+schedule.every().day.at("08:00").do(daily_check)
 
 if __name__ == "__main__":
     # 스크립트 시작 즉시 한 번 실행
     send_telegram_message("[main] 스케줄러 시작 — 즉시 실행")
-    daily_check()
+    daily_check()  # 즉시 실행
 
     # 이후 매 분마다 스케줄 점검
     send_telegram_message("[main] 루프 진입, 스케줄 대기 중")
