@@ -31,6 +31,11 @@ def record_expiring_users():
     today   = datetime.now().date()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # extends_data 시트가 비어 있을 경우, 처리하지 않고 패스
+    if df_ext.empty:
+        send_telegram_message("[record] extends_data 시트가 비어 있습니다. 패스합니다.")
+        return
+
     targets = []
     for i, row in df_main.iterrows():
         exp = datetime.strptime(row["만료일"], "%Y-%m-%d").date()
@@ -102,6 +107,7 @@ def record_expiring_users():
         msg = "[record] 이메일 발송 대상:\n" + "\n".join(f"- {n}" for n in sent_names)
         send_telegram_message(msg)
 
+
 def check_payment_and_extend():
     """
     1) extends_data에서 입금 여부(O)면 user_data 만료일 연장
@@ -114,6 +120,11 @@ def check_payment_and_extend():
 
     extended = []
     dropped  = []
+
+    # extends_data 시트가 비어 있을 경우, 처리하지 않고 패스
+    if df_ext.empty:
+        send_telegram_message("[check] extends_data 시트가 비어 있습니다. 패스합니다.")
+        return
 
     for i, row in df_ext.iterrows():
         name = row["이름"]
