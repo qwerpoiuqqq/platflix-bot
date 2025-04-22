@@ -29,7 +29,7 @@ def daily_check():
         logging.error(f"[daily_check] 예외: {e}")
 
 # 매일 08:00에 스케줄링
-schedule.every().day.at("20:45").do(daily_check)
+schedule.every().day.at("20:50").do(daily_check)
 
 if __name__ == "__main__":
     send_telegram_message("[main] 스케줄러 시작")
