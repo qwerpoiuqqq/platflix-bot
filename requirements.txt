@@ -4,3 +4,5 @@ gspread
 oauth2client
 nest_asyncio
 pandas
+schedule
+requests

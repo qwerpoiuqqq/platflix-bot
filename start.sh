@@ -1,2 +1,2 @@
 #!/bin/bash
-python3 bot.py
+python daily_check.py
