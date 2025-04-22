@@ -34,10 +34,9 @@ def record_expiring_users():
     targets = []
     for i, row in df_main.iterrows():
         exp = datetime.strptime(row["만료일"], "%Y-%m-%d").date()
-        # 만료 3일 전 or 이미 만료된 사용자
         if exp <= today or exp == today + timedelta(days=3):
-            # 지인 결제 여부가 "X"인 경우에는 extends_data에 추가하지 않음
-            if row["지인 결제 여부"].strip().upper() == "X":
+            # '지인 결제 여부'가 "X"인 경우에는 extends_data에 추가하지 않음
+            if row["비고"] == "지인" and row["결제 여부"].strip().upper() == "X":
                 continue
             if not is_in_extends(df_ext, row["이메일"]):
                 targets.append(i)
@@ -60,8 +59,8 @@ def record_expiring_users():
         friend_f   = u.get("지인 여부", "")
         due        = get_due_date_str(exp_str)
 
-        # 템플릿 분기
-        if friend_f.upper() == "O" and friend_pay.upper() == "O":
+        # 템플릿 분기: 지인 결제 여부 X 또는 결제하지 않는 경우 'friends_email.html'로 발송
+        if friend_pay == "X" or (friend_f.upper() == "O" and friend_pay != "X"):
             ok = send_friend_email(
                 to_email=email,
                 name=name,
