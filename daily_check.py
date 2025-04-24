@@ -28,7 +28,7 @@ def daily_check():
         logging.error(f"[daily_check] 예외: {e}")
 
 # 매일 아침 08:00에 실행되도록 설정
-schedule.every().day.at("08:00").do(daily_check)
+schedule.every().day.at("05:00").do(daily_check)
 
 if __name__ == "__main__":
     # 스크립트 시작 즉시 한 번 실행

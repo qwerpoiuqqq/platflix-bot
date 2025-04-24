@@ -23,25 +23,20 @@ def is_in_extends(df_ext, email):
 def record_expiring_users():
     """
     1) user_data에서 이미 만료되었거나 만료 3일 전 대상 찾기
-    2) 이메일 발송 → extends_data에 기록 (연장 개월수/입금 여부는 빈칸으로 남겨 두고, 나중에 수작업 입력)
-    3) 처리된 이름을 모아 한 번에 텔레그램에 발송
+    2) 이메일 발송 → extends_data에 기록
+    3) 텔레그램에 발송 대상 알림
     """
     df_main = get_sheet_df("user_data")
     df_ext  = get_sheet_df("extends_data")
     today   = datetime.now().date()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # extends_data 시트가 비어 있을 경우, 처리하지 않고 패스
-    if df_ext.empty:
-        send_telegram_message("[record] extends_data 시트가 비어 있습니다. 패스합니다.")
-        return
-
     targets = []
     for i, row in df_main.iterrows():
         exp = datetime.strptime(row["만료일"], "%Y-%m-%d").date()
         # 만료 3일 전 or 이미 만료된 사용자
         if exp <= today or exp == today + timedelta(days=3):
-            # '지인 결제 여부'가 "X"인 경우에는 extends_data에 추가하지 않음
+            # 지인 + 결제 여부 X인 경우 건너뛰기
             if row["비고"] == "지인" and row["결제 여부"].strip().upper() == "X":
                 continue
             if not is_in_extends(df_ext, row["이메일"]):
@@ -65,8 +60,8 @@ def record_expiring_users():
         friend_f   = u.get("지인 여부", "")
         due        = get_due_date_str(exp_str)
 
-        # 템플릿 분기: 지인 결제 여부 X 또는 결제하지 않는 경우 'friends_email.html'로 발송
-        if friend_pay == "X" or (friend_f.upper() == "O" and friend_pay != "X"):
+        # 지인+공란 → 친구용 이메일 / 그 외 → 프리미엄 이메일
+        if remark == "지인" and friend_pay.strip() == "":
             ok = send_friend_email(
                 to_email=email,
                 name=name,
@@ -87,122 +82,103 @@ def record_expiring_users():
 
         if ok:
             append_row("extends_data", [
-                name,        # 이름
-                email,       # 이메일
-                exp_str,     # 만료일
-                phone,       # 전화번호
-                remark,      # 비고
-                group,       # 그룹
-                group_no,    # 그룹 번호
-                friend_pay,  # 지인 결제 여부
-                friend_f,    # 지인 여부
-                "",          # 연장 개월수 (수동 입력)
-                "",          # 입금 여부   (수동 입력)
-                now_str      # 기록 시간
+                name,
+                email,
+                exp_str,
+                phone,
+                remark,
+                group,
+                group_no,
+                friend_pay,
+                friend_f,
+                "",  # 연장 개월수
+                "",  # 입금 여부
+                now_str
             ])
             sent_names.append(name)
 
-    # 한 번에 묶어서 알림
-    if sent_names:
-        msg = "[record] 이메일 발송 대상:\n" + "\n".join(f"- {n}" for n in sent_names)
-        send_telegram_message(msg)
+    send_telegram_message("[record] 이메일 발송 대상:\n" + "\n".join(f"- {n}" for n in sent_names))
 
 
 def check_payment_and_extend():
     """
     1) extends_data에서 입금 여부(O)면 user_data 만료일 연장
-    2) 입금 여부 X, 삭제 기한 도달 시 user_data에서 삭제
-    3) 처리된 레코드를 extends_data 및 user_data에서 제거
+    2) 입금 여부 X, 삭제 기한 도달 시 user_data 삭제
+    3) 처리된 레코드 extends_data/user_data에서 제거
     """
     df_ext = get_sheet_df("extends_data")
-    df_main = get_sheet_df("user_data")
-    to_remove = []
-
-    extended = []
-    dropped  = []
-
-    # extends_data 시트가 비어 있을 경우, 처리하지 않고 패스
     if df_ext.empty:
         send_telegram_message("[check] extends_data 시트가 비어 있습니다. 패스합니다.")
         return
+
+    df_main = get_sheet_df("user_data")
+    to_remove = []
+    extended = []
+    dropped  = []
 
     for i, row in df_ext.iterrows():
         name = row["이름"]
         email = row["이메일"]
         old_exp = datetime.strptime(row["만료일"], "%Y-%m-%d").date()
-        record_ts = datetime.strptime(row.get("기록 시간", ""), "%Y-%m-%d %H:%M:%S")
-        deposit = row.get("입금 여부", "")  # 입금 여부가 'O'이면 연장
-        months = row.get("연장 개월수", "")
-        now = datetime.now()
 
-        # 삭제 기한 계산 (만료일 기준 또는 기록일 기준)
+        # 기록 시간이 빈 문자열이면 지금으로 대체
+        rec = row.get("기록 시간", "")
+        record_ts = datetime.strptime(rec, "%Y-%m-%d %H:%M:%S") if rec else datetime.now()
+
+        deposit = row.get("입금 여부", "").strip().upper()
+        months  = row.get("연장 개월수", "")
+        now     = datetime.now()
+
+        # 삭제 기한: 만료일 23:59 혹은 기록일+1일 23:59
         if old_exp > record_ts.date():
-            delete_deadline = datetime.combine(old_exp, datetime.max.time())  # 만료일 23:59까지
+            deadline = datetime.combine(old_exp, datetime.max.time())
         else:
-            delete_deadline = (record_ts + timedelta(days=1)).replace(hour=23, minute=59, second=59)  # 기록일+1일
+            deadline = (record_ts + timedelta(days=1)).replace(hour=23, minute=59, second=59)
 
-        if str(deposit).upper() == "O":
-            # 입금 O: 연장 처리
+        if deposit == "O":
             idxs = df_main[df_main["이메일"] == email].index
-            if len(idxs) > 0:
-                j      = idxs[0]
-                prev   = datetime.strptime(df_main.loc[j, "만료일"], "%Y-%m-%d").date()
-                ext_m  = 1
-                if "3" in str(months):
-                    ext_m = 3
-                elif "6" in str(months):
-                    ext_m = 6
-                new_dt = prev + timedelta(days=30 * ext_m)
-                df_main.loc[j, "만료일"] = new_dt.strftime("%Y-%m-%d")
-                extended.append(f"{name} ({ext_m}개월)")
+            if idxs.any():
+                j    = idxs[0]
+                prev = datetime.strptime(df_main.loc[j, "만료일"], "%Y-%m-%d").date()
+                extm = 1
+                if "3" in months: extm = 3
+                if "6" in months: extm = 6
+                newd = prev + timedelta(days=30 * extm)
+                df_main.loc[j, "만료일"] = newd.strftime("%Y-%m-%d")
+                extended.append(f"{name} ({extm}개월)")
             to_remove.append(i)
 
-        # 미입금 & 삭제 기한 도달 시 삭제
-        elif now >= delete_deadline:
+        elif now >= deadline:
             idxs = df_main[df_main["이메일"] == email].index
-            if len(idxs) > 0:
+            if idxs.any():
                 df_main.drop(idxs, inplace=True)
                 dropped.append(name)
             to_remove.append(i)
 
-    # 처리된 레코드 삭제 및 시트 갱신
     if to_remove:
         df_ext.drop(to_remove, inplace=True)
         update_sheet_df("extends_data", df_ext)
         update_sheet_df("user_data", df_main)
 
-    # 텔레그램 알림
     if extended:
-        msg = "[extend] 연장 처리 완료:\n" + "\n".join(f"- {e}" for e in extended)
-        send_telegram_message(msg)
+        send_telegram_message("[extend] 연장 완료:\n" + "\n".join(f"- {e}" for e in extended))
     if dropped:
-        msg = "[drop] 탈락 사용자 삭제:\n" + "\n".join(f"- {n}" for n in dropped)
-        send_telegram_message(msg)
+        send_telegram_message("[drop] 삭제 완료:\n" + "\n".join(f"- {n}" for n in dropped))
     if not extended and not dropped:
         send_telegram_message("[check] 연장/삭제 대상 없음")
 
+
 def handle_phone_list_for_sms():
     """
-    문자 발송용: extends_data의 이름·전화번호를 묶어서 두 번에 나눠 전송
+    문자 발송용: extends_data 이름·전화번호 목록을 두 번에 나눠 전송
     """
     df_ext = get_sheet_df("extends_data")
     if df_ext.empty or "전화번호" not in df_ext.columns:
         send_telegram_message("[sms] 대상 없음")
         return
 
-    names  = df_ext["이름"].dropna().astype(str).tolist()
-    phones = [
-        format_phone(p)
-        for p in df_ext["전화번호"].dropna().astype(str).tolist()
-        if p.strip()
-    ]
+    names  = df_ext["이름"].dropna().tolist()
+    phones = [format_phone(p) for p in df_ext["전화번호"].dropna().tolist() if p.strip()]
 
-    if not names:
-        send_telegram_message("[sms] 대상 없음")
-        return
-
-    name_msg  = "[만료자 안내]\n" + "\n".join(f"- {n}" for n in names)
-    phone_msg = "[번호목록]\n" + ", ".join(phones)
-
-    send_telegram_message(name_msg)
-    send_telegram_message(phone_msg)
+    send_telegram_message("[만료자 안내]\n" + "\n".join(f"- {n}" for n in names))
+    send_telegram_message("[번호목록]\n" + ", ".join(phones))
