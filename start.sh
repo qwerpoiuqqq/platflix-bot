@@ -1,4 +1,5 @@
 #!/bin/bash
+export TZ="Asia/Seoul"
 # 두 개의 파이썬 스크립트가 동시에 실행되도록 설정
 
 # 실시간 봇 실행
