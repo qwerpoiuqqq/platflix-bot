@@ -62,7 +62,7 @@ def record_expiring_users():
         group_no   = u.get("그룹 번호", "")
         friend_pay = u.get("결제 여부", "").strip().upper()  # 원래 user_data의 '결제 여부'
         friend_f   = u.get("비고", "")  # 비고에 '지인' 표시
-        due        = get_due_date_str()  # 오늘 기준 다음날 23:59까지
+        due = get_due_date_str(exp_str)  # 오늘 기준 다음날 23:59까지
 
         # 지인 & 결제 안 함(X)이면 친구용, else 정규 템플릿
         if friend_f == "지인" and friend_pay != "X":
